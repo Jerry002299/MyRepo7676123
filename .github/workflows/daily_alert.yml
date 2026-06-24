@@ -22,8 +22,14 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
 
-    - name: Run Alert Bot
+    - name: Run Free Alert Bot
       env:
         TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
         TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
       run: python bot.py
+
+    - name: Run Premium Alert Bot
+      env:
+        TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+        TELEGRAM_PREMIUM_CHAT_ID: ${{ secrets.TELEGRAM_PREMIUM_CHAT_ID }}
+      run: python premium_bot.py
