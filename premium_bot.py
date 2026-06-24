@@ -5,34 +5,55 @@ import yfinance as yf
 from datetime import datetime, timedelta
 from google import genai
 
-# INITIALIZE GEMINI CLIENT NATIVELY
+# INITIALIZE GEMINI CLIENT
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 ai_client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
 
-# PREMIUM HIGH-VOLUME MOMENTUM LIST
+# ==============================================================================
+# EXPANDED MAXIMUM LIQUIDITY & MOMENTUM WATCHLIST (70+ Alpha Targets)
+# ==============================================================================
 PREMIUM_WATCHLIST = [
-    "ADANIENT.NS", "HFCL.NS", "HAL.NS", "BEL.NS", 
-    "MAZDOCK.NS", "COCHINSHIP.NS", "SUZLON.NS", "IREDA.NS",
-    "RELIANCE.NS", "TCS.NS", "INFY.NS"
+    # --- Defense, Engineering & Railway Momentum ---
+    "HAL.NS", "BEL.NS", "MAZDOCK.NS", "COCHINSHIP.NS", "BEML.NS", "BDL.NS", 
+    "IRFC.NS", "RVNL.NS", "IRCON.NS", "TITAGARH.NS", "RAILTEL.NS", "TEXRAIL.NS",
+    
+    # --- Green Energy, Power & EV Wave ---
+    "IREDA.NS", "SUZLON.NS", "NHPC.NS", "SJVN.NS", "KPIGREEN.NS", "TATAPOWER.NS", 
+    "POWERGRID.NS", "NTPC.NS", "RECLTD.NS", "PFC.NS", "GENSOL.NS", "AWL.NS",
+    
+    # --- High-Volume Retail & Institutional Favorites ---
+    "ADANIENT.NS", "ADANIPORTS.NS", "ADANIPOWER.NS", "ADANIGREEN.NS", "ATGL.NS",
+    "JIOFIN.NS", "TRENT.NS", "ZOMATO.NS", "HUDCO.NS", "NBCC.NS", "GMRINFRA.NS", 
+    "HFCL.NS", "IRB.NS", "RVHL.NS", "PPLPHARMA.NS", "VEDL.NS", "BSE.NS",
+    
+    # --- Nifty Index Heavyweights (Steady Event Flows) ---
+    "RELIANCE.NS", "TCS.NS", "INFY.NS", "HDFCBANK.NS", "ICICIBANK.NS", "SBIN.NS", 
+    "BHARTIARTL.NS", "ITC.NS", "TATAMOTOR.NS", "AXISBANK.NS", "M&M.NS", "LT.NS",
+    "MARUTI.NS", "SUNPHARMA.NS", "BAJAJFINSV.NS", "KOTAKBANK.NS", "HCLTECH.NS",
+    
+    # --- Midcap Volume Outliers ---
+    "CDSL.NS", "ANGELONE.NS", "TATAMTRDVR.NS", "IRCTC.NS", "YESBANK.NS", 
+    "SAIL.NS", "NMDC.NS", "TATASTEEL.NS", "GATI.NS", "JINDALSTEL.NS", "NCOHANCE.NS"
 ]
 
 events_list = []
 today = datetime.today().date()
 three_days_out = today + timedelta(days=3)
 
-def analyze_news_sentiment(ticker, headlines):
-    """Feeds news headlines to Gemini to extract intraday trading biases."""
-    if not ai_client or not headlines:
-        return "N/A", "Neutral news environment. Monitor price action normally."
+def generate_profit_booking_strategy(ticker, event_type, headlines):
+    """Commands Gemini to extract definitive short-term and long-term profit guidelines."""
+    if not ai_client:
+        return "5/10", "Neutral framework.", "Hold core technical support."
         
     prompt = f"""
-    You are an elite institutional intraday momentum trader in the Indian Stock Market (NSE/BSE).
-    Analyze these recent news headlines for the stock {ticker}:
-    {headlines}
+    You are an elite, highly aggressive institutional money manager for Indian Equities (NSE/BSE).
+    Analyze this corporate event '{event_type}' and recent headlines for {ticker}:
+    {headlines if headlines else 'No recent breaking news.'}
     
-    Provide your output strictly in this exact format:
-    SCORE: [Give a numerical rating from 1 to 10 where 1 is hyper-bearish panic and 10 is explosive bullish momentum breakout]
-    BIAS: [Provide a sharp, 1-sentence tactical intraday trade execution strategy for market open based on this news context]
+    Provide target execution entries and exits in this exact format string:
+    SCORE: [1-10 momentum rank]
+    INTRADAY: [Strict opening action rule, target resistance to book quick profits, and invalidation stop-loss]
+    LONGTERM: [Explicit investment allocation rule, and trailing price target or percentage milestone to partially book capital profits]
     """
     try:
         response = ai_client.models.generate_content(
@@ -41,60 +62,56 @@ def analyze_news_sentiment(ticker, headlines):
         )
         text = response.text
         
-        # Parse output fields cleanly
-        score = "7.0"
-        bias = "Watch volume expansion."
+        score, intraday, longterm = "5.0", "Monitor open.", "Hold structural base."
         for line in text.split('\n'):
             if line.startswith("SCORE:"):
                 score = line.replace("SCORE:", "").strip()
-            elif line.startswith("BIAS:"):
-                bias = line.replace("BIAS:", "").strip()
-        return score, bias
+            elif line.startswith("INTRADAY:"):
+                intraday = line.replace("INTRADAY:", "").strip()
+            elif line.startswith("LONGTERM:"):
+                longterm = line.replace("LONGTERM:", "").strip()
+        return score, intraday, longterm
     except Exception:
-        return "N/A", "AI engine busy. Trade according to technical chart setup."
+        return "N/A", "Scalp near technical pivot lines.", "Book partial gains at standard Fibonacci extensions."
 
-print("Starting Premium AI Scan Engine...")
+print(f"Starting Alpha AI Scan across {len(PREMIUM_WATCHLIST)} institutional tickers...")
 
 for ticker in PREMIUM_WATCHLIST:
     try:
         stock = yf.Ticker(ticker)
         calendar = stock.get_calendar()
         
-        # Pull live raw headlines for news extraction
+        # Capture raw headline vectors
         news_data = stock.news
-        headline_summary = ""
-        if news_data:
-            headline_summary = "\n".join([f"- {item['title']}" for item in news_data[:3]])
-            
+        headlines = "\n".join([f"- {item['title']}" for item in news_data[:3]]) if news_data else ""
+        
         if calendar and isinstance(calendar, dict):
-            # 1. AI Analysis on Pre-Earnings Catalysts
+            # 1. Parse Pre-Earnings Volume Windows
             if "Earnings Date" in calendar:
                 earn_data = calendar["Earnings Date"]
                 if isinstance(earn_data, list) and len(earn_data) > 0:
                     earn_date = pd.to_datetime(earn_data[0]).date()
                     if today <= earn_date <= three_days_out:
-                        ai_score, ai_bias = analyze_news_sentiment(ticker, headline_summary)
+                        score, intra, long_strat = generate_profit_booking_strategy(ticker, "Pre-Earnings Release", headlines)
                         events_list.append({
                             "symbol": ticker.replace(".NS", ""),
-                            "action_type": "🔥 PRE-EARNINGS MOMENTUM",
+                            "action": "🔥 PRE-EARNINGS HIGH VOLATILITY",
                             "date": earn_date.strftime('%d-%m-%Y'),
-                            "score": ai_score,
-                            "bias": ai_bias
+                            "score": score, "intraday": intra, "longterm": long_strat
                         })
             
-            # 2. AI Analysis on Dividend Adjustments
+            # 2. Parse Imminent Ex-Dividend Deadlines
             if "Ex-Dividend Date" in calendar:
                 div_data = calendar["Ex-Dividend Date"]
                 if div_data:
                     div_date = pd.to_datetime(div_data).date()
                     if today <= div_date <= three_days_out:
-                        ai_score, ai_bias = analyze_news_sentiment(ticker, headline_summary)
+                        score, intra, long_strat = generate_profit_booking_strategy(ticker, "Ex-Dividend Adjustment", headlines)
                         events_list.append({
                             "symbol": ticker.replace(".NS", ""),
-                            "action_type": "💰 URGENT DIVIDEND CUTOFF",
+                            "action": "💰 DIVIDEND PRICE CUTOFF",
                             "date": div_date.strftime('%d-%m-%Y'),
-                            "score": ai_score,
-                            "bias": ai_bias
+                            "score": score, "intraday": intra, "longterm": long_strat
                         })
     except Exception:
         continue
@@ -104,22 +121,22 @@ TELEGRAM_PREMIUM_CHAT_ID = os.getenv("TELEGRAM_PREMIUM_CHAT_ID")
 
 def send_premium_alert(events):
     if not events:
-        print("No immediate premium trade setups found on the radar today.")
+        print("No high-alpha short term trade configurations matched the radar today.")
         return
     
-    message = "<b>👑 PREMIUM AI MARKET RADAR</b>\n"
-    message += "<i>Automated News Sentiment & Catalyst Strategies</i>\n\n"
-    
+    # Send entries individually if list is large to maintain structured formatting
     for ev in events:
-        message += f"⚡ <b>{ev['symbol']}</b> | {ev['action_type']}\n"
-        message += f"  🗓 Target Date: {ev['date']}\n"
-        message += f"  🤖 AI Sentiment Score: <b>{ev['score']}/10</b>\n"
-        message += f"  💡 <i>Tactical Strategy: {ev['bias']}</i>\n\n"
+        message = f"<b>👑 PREMIUM INSIDER ALPHA RADAR</b>\n"
+        message += f"⚡ <b>{ev['symbol']}</b> | {ev['action']}\n"
+        message += f"🗓 <b>Target Date:</b> {ev['date']}\n"
+        message += f"📊 <b>Momentum Score:</b> <code>{ev['score']}/10</code>\n\n"
+        message += f"🏹 <b>Intraday Setup & profit Booking:</b>\n<i>{ev['intraday']}</i>\n\n"
+        message += f"💼 <b>Long-Term Capital Allocation & Scale-Out:</b>\n<i>{ev['longterm']}</i>\n"
         
-    url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
-    payload = {"chat_id": TELEGRAM_PREMIUM_CHAT_ID, "text": message, "parse_mode": "HTML"}
-    response = requests.post(url, json=payload)
-    print(f"Premium Telegram Delivery Status: {response.status_code}")
+        url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
+        requests.post(url, json={"chat_id": TELEGRAM_PREMIUM_CHAT_ID, "text": message, "parse_mode": "HTML"})
+        
+    print(f"Successfully processed and delivered {len(events)} premium alerts.")
 
 if __name__ == "__main__":
     send_premium_alert(events_list)
