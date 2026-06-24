@@ -3,12 +3,9 @@ import requests
 import pandas as pd
 import yfinance as yf
 from datetime import datetime, timedelta
-# FIX: Explicit import path to bypass root namespace environmental traps
-from google.genai import Client
 
-# INITIALIZE GEMINI CLIENT NATIVELY
+# GET API KEYS FROM ENVIRONMENT
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-ai_client = Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
 
 # ==============================================================================
 # EXPANDED MAXIMUM LIQUIDITY & MOMENTUM WATCHLIST (70+ Alpha Targets)
@@ -42,8 +39,8 @@ today = datetime.today().date()
 three_days_out = today + timedelta(days=3)
 
 def generate_profit_booking_strategy(ticker, event_type, headlines):
-    """Commands Gemini to extract definitive short-term and long-term profit guidelines."""
-    if not ai_client:
+    """Calls Gemini API directly via raw HTTP POST requests to prevent SDK import errors."""
+    if not GEMINI_API_KEY:
         return "5/10", "Neutral framework.", "Hold core technical support."
         
     prompt = f"""
@@ -56,26 +53,35 @@ def generate_profit_booking_strategy(ticker, event_type, headlines):
     INTRADAY: [Strict opening action rule, target resistance to book quick profits, and invalidation stop-loss]
     LONGTERM: [Explicit investment allocation rule, and trailing price target or percentage milestone to partially book capital profits]
     """
+    
+    # Pure HTTP direct call to Gemini 2.5 Flash endpoints
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={GEMINI_API_KEY}"
+    headers = {"Content-Type": "application/json"}
+    payload = {
+        "contents": [{"parts": [{"text": prompt}]}]
+    }
+    
     try:
-        response = ai_client.models.generate_content(
-            model='gemini-2.5-flash',
-            contents=prompt
-        )
-        text = response.text
-        
-        score, intraday, longterm = "5.0", "Monitor open.", "Hold structural base."
-        for line in text.split('\n'):
-            if line.startswith("SCORE:"):
-                score = line.replace("SCORE:", "").strip()
-            elif line.startswith("INTRADAY:"):
-                intraday = line.replace("INTRADAY:", "").strip()
-            elif line.startswith("LONGTERM:"):
-                longterm = line.replace("LONGTERM:", "").strip()
-        return score, intraday, longterm
+        response = requests.post(url, json=payload, headers=headers, timeout=15)
+        if response.status_code == 200:
+            res_json = response.json()
+            text = res_json['candidates'][0]['content']['parts'][0]['text']
+            
+            score, intraday, longterm = "5.0", "Monitor open.", "Hold structural base."
+            for line in text.split('\n'):
+                if line.startswith("SCORE:"):
+                    score = line.replace("SCORE:", "").strip()
+                elif line.startswith("INTRADAY:"):
+                    intraday = line.replace("INTRADAY:", "").strip()
+                elif line.startswith("LONGTERM:"):
+                    longterm = line.replace("LONGTERM:", "").strip()
+            return score, intraday, longterm
+        else:
+            return "N/A", "Scan raw chart pivots.", "Hold according to structural portfolio guidelines."
     except Exception:
         return "N/A", "Scalp near technical pivot lines.", "Book partial gains at standard Fibonacci extensions."
 
-print(f"Starting Alpha AI Scan across {len(PREMIUM_WATCHLIST)} institutional tickers...")
+print(f"Starting Alpha AI HTTP Scan across {len(PREMIUM_WATCHLIST)} institutional tickers...")
 
 for ticker in PREMIUM_WATCHLIST:
     try:
@@ -125,7 +131,6 @@ def send_premium_alert(events):
         print("No high-alpha short term trade configurations matched the radar today.")
         return
     
-    # Send entries individually if list is large to maintain structured formatting
     for ev in events:
         message = f"<b>👑 PREMIUM INSIDER ALPHA RADAR</b>\n"
         message += f"⚡ <b>{ev['symbol']}</b> | {ev['action']}\n"
