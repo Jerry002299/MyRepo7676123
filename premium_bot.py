@@ -14,25 +14,27 @@ PREMIUM_WATCHLIST = [
     # --- Defense, Engineering & Railway Momentum ---
     "HAL.NS", "BEL.NS", "MAZDOCK.NS", "COCHINSHIP.NS", "BEML.NS", "BDL.NS", 
     "IRFC.NS", "RVNL.NS", "IRCON.NS", "TITAGARH.NS", "RAILTEL.NS", "TEXRAIL.NS",
-    
+
     # --- Green Energy, Power & EV Wave ---
     "IREDA.NS", "SUZLON.NS", "NHPC.NS", "SJVN.NS", "KPIGREEN.NS", "TATAPOWER.NS", 
     "POWERGRID.NS", "NTPC.NS", "RECLTD.NS", "PFC.NS", "GENSOL.NS", "AWL.NS",
-    
+
     # --- High-Volume Retail & Institutional Favorites ---
-    "ADANIENT.NS", "ADANIPORTS.NS", "ADANIPOWER.NS", "ADANIGREEN.NS", "ATGL.NS",
+    "ADANIENT.NS", "ADANIPORTS.NS", "ADANIPOWER.NS", "ADANIGREEN.NS", "ATGL.NS", 
     "JIOFIN.NS", "TRENT.NS", "ZOMATO.NS", "HUDCO.NS", "NBCC.NS", "GMRINFRA.NS", 
     "HFCL.NS", "IRB.NS", "RVHL.NS", "PPLPHARMA.NS", "VEDL.NS", "BSE.NS",
-    
+
     # --- Nifty Index Heavyweights (Steady Event Flows) ---
     "RELIANCE.NS", "TCS.NS", "INFY.NS", "HDFCBANK.NS", "ICICIBANK.NS", "SBIN.NS", 
-    "BHARTIARTL.NS", "ITC.NS", "TATAMOTOR.NS", "AXISBANK.NS", "M&M.NS", "LT.NS",
+    "BHARTIARTL.NS", "ITC.NS", "TATAMOTORS.NS", "AXISBANK.NS", "M&M.NS", "LT.NS", 
     "MARUTI.NS", "SUNPHARMA.NS", "BAJAJFINSV.NS", "KOTAKBANK.NS", "HCLTECH.NS",
-    
+    "COFORGE.NS",  # Added
+
     # --- Midcap Volume Outliers ---
-    "CDSL.NS", "ANGELONE.NS", "TATAMTRDVR.NS", "IRCTC.NS", "YESBANK.NS", 
-    "SAIL.NS", "NMDC.NS", "TATASTEEL.NS", "GATI.NS", "JINDALSTEL.NS", "NCOHANCE.NS"
+    "CDSL.NS", "ANGELONE.NS", "TATAMTRDV.NS", "IRCTC.NS", "YESBANK.NS", "SAIL.NS", 
+    "NMDC.NS", "TATASTEEL.NS", "GATI.NS", "JINDALSTEL.NS", "COHANCE.NS"
 ]
+
 
 events_list = []
 today = datetime.today().date()
