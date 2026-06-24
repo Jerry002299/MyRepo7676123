@@ -13,7 +13,7 @@ WATCHLIST = [
 
 events_list = []
 today = datetime.today().date()
-one_week_out = today + timedelta(days=7)
+one_week_out = today + timedelta(days=60)
 
 print("Starting Watchlist scan via upgraded Yahoo Finance Engine...")
 
