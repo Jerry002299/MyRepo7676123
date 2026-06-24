@@ -1,67 +1,71 @@
 import os
 import requests
 import pandas as pd
+import yfinance as yf
 from datetime import datetime, timedelta
 
-def fetch_bse_corporate_actions():
-    # BSE API endpoint for corporate actions - free and cloud-friendly!
-    url = "https://api.bseindia.com/BseIndiaAPI/api/DefaultDataData/w"
-    
-    # Target parameter for Corporate Actions
-    params = {
-        "Type": "CorpAction",
-        "period": "7D" # Fetches all actions within the next 7 days
-    }
-    
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
-        "Referer": "https://www.bseindia.com/"
-    }
-    
-    try:
-        print("Fetching data directly from BSE Engine...")
-        response = requests.get(url, params=params, headers=headers, timeout=15)
-        
-        if response.status_code == 200:
-            print("Successfully retrieved BSE corporate actions dataset!")
-            return pd.DataFrame(response.json())
-        else:
-            print(f"BSE API returned status code: {response.status_code}")
-            return pd.DataFrame()
-    except Exception as e:
-        print(f"BSE Fetch Error: {e}")
-        return pd.DataFrame()
+# High-momentum target list (.NS for NSE, .BO for BSE)
+WATCHLIST = [
+    "ADANIENT.NS", "HFCL.NS", "HAL.NS", "BEL.NS", 
+    "MAZDOCK.NS", "COCHINSHIP.NS", "SUZLON.NS", "IREDA.NS",
+    "RELIANCE.NS", "TCS.NS", "INFY.NS", "ZOMATO.NS"
+]
 
-df = fetch_bse_corporate_actions()
 events_list = []
+today = datetime.today().date()
+one_week_out = today + timedelta(days=7)
 
-if not df.empty:
-    print("Decoding and filtering datasets...")
-    # Map BSE's specific JSON keys safely
-    # Standard BSE response fields: 'scrip_cd', 'symbol', 'purpose', 'ex_date'
-    for _, row in df.head(15).iterrows():
-        symbol = row.get('symbol', row.get('scrip_name', 'UNKNOWN'))
-        purpose = row.get('purpose', 'Corporate Action')
-        ex_date = row.get('ex_date', 'N/A')
+print("Starting Watchlist scan via Yahoo Finance Engine...")
+
+for ticker in WATCHLIST:
+    try:
+        stock = yf.Ticker(ticker)
+        calendar = stock.get_calendar()
         
-        events_list.append({
-            "symbol": str(symbol).strip(),
-            "action_type": str(purpose).strip(),
-            "date": str(ex_date).strip()
-        })
+        # If an upcoming event schedule is found
+        if calendar and not calendar.empty:
+            # Check for Earnings Date
+            if "Earnings Date" in calendar.index:
+                earn_dates = calendar.loc["Earnings Date"].values[0]
+                # If it's a list or array of dates, grab the first one
+                if isinstance(earn_dates, (list, tuple, pd.Series)):
+                    earn_date = earn_dates[0].date()
+                else:
+                    earn_date = pd.to_datetime(earn_dates).date()
+                
+                if today <= earn_date <= one_week_out:
+                    events_list.append({
+                        "symbol": ticker.replace(".NS", ""),
+                        "action_type": "Earnings Release",
+                        "date": earn_date.strftime('%d-%m-%Y')
+                    })
+                    
+            # Check for Dividend Date
+            if "Ex-Dividend Date" in calendar.index:
+                div_val = calendar.loc["Ex-Dividend Date"].values[0]
+                div_date = pd.to_datetime(div_val).date()
+                if today <= div_date <= one_week_out:
+                    events_list.append({
+                        "symbol": ticker.replace(".NS", ""),
+                        "action_type": "Ex-Dividend Date",
+                        "date": div_date.strftime('%d-%m-%Y')
+                    })
+    except Exception as e:
+        print(f"Skipping {ticker}: {e}")
+        continue
 
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 
 def send_telegram_alert(events):
     if not events:
-        print("No active corporate actions listed on the exchange calendar for this week.")
+        print("No earnings or dividends scheduled for watchlist stocks this week.")
         return
     
-    message = "<b>📅 Live Exchange Corporate Action Alerts</b>\n\n"
+    message = "<b>📅 Live Watchlist Corporate Action Alerts</b>\n\n"
     for ev in events:
         message += f"• <b>{ev['symbol']}</b> | {ev['action_type'].upper()}\n"
-        message += f"  🗓 Ex-Date: {ev['date']}\n\n"
+        message += f"  🗓 Date: {ev['date']}\n\n"
         
     url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
     payload = {"chat_id": TELEGRAM_CHAT_ID, "text": message, "parse_mode": "HTML"}
