@@ -3,7 +3,7 @@ name: Daily Corporate Alert Bot
 on:
   schedule:
     - cron: '0 3 * * *' # Runs every day at 8:30 AM IST
-  workflow_dispatch: # This adds a manual "Play" button so we can test it immediately!
+  workflow_dispatch: # Manual "Play" button
 
 jobs:
   run-bot:
@@ -32,4 +32,5 @@ jobs:
       env:
         TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
         TELEGRAM_PREMIUM_CHAT_ID: ${{ secrets.TELEGRAM_PREMIUM_CHAT_ID }}
+        GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}  # <-- MAKE SURE THIS LINE IS ADDED!
       run: python premium_bot.py
