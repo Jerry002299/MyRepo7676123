@@ -7,15 +7,15 @@ from datetime import datetime, timedelta
 # FREE TIER WATCHLIST (Benchmark Giants + High-Volume Momentum Plays)
 # ==============================================================================
 WATCHLIST = [
-    # --- The High-Volume Retail & Momentum Favorites ---
+    # --- High-Volume Momentum & Retail Favorites ---
     "ADANIENT.NS", "HFCL.NS", "HAL.NS", "BEL.NS", 
     "MAZDOCK.NS", "COCHINSHIP.NS", "SUZLON.NS", "IREDA.NS",
-    "ZOMATO.NS", "JIOFIN.NS", "TRENT.NS", "KPIGREEN.NS",
+    "JIOFIN.NS", "TRENT.NS", "KPIGREEN.NS",
     
-    # --- Nifty 50 Heavyweights (Guarantees steady event flow) ---
+    # --- Blue-Chip Index Heavyweights ---
     "RELIANCE.NS", "TCS.NS", "INFY.NS", "HDFCBANK.NS", 
     "ICICIBANK.NS", "SBIN.NS", "BHARTIARTL.NS", "ITC.NS", 
-    "LTIM.NS", "TATAMOTORS.NS", "M&M.NS", "AXISBANK.NS"
+    "TATAMOTOR.NS", "AXISBANK.NS", "M&M.NS"
 ]
 
 events_list = []
