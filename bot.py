@@ -4,7 +4,17 @@ import pandas as pd
 from datetime import datetime, timedelta
 from india_corp_actions import IndiaCorpActions
 
-client = IndiaCorpActions()
+# Custom headers to trick NSE/BSE into thinking this is a real desktop browser
+custom_headers = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+    "Accept-Language": "en-US,en;q=0.9",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8",
+    "Referer": "https://www.nseindia.com/"
+}
+
+# Pass the desktop headers directly into the API client configuration
+client = IndiaCorpActions(headers=custom_headers)
+
 start_date = datetime.today().strftime('%d-%m-%Y')
 end_date = (datetime.today() + timedelta(days=7)).strftime('%d-%m-%Y')
 
@@ -39,3 +49,5 @@ def send_telegram_alert(dataframe):
 if __name__ == "__main__":
     if not df.empty:
         send_telegram_alert(df)
+    else:
+        print("No events fetched from exchange datasets.")
