@@ -4,16 +4,23 @@ import pandas as pd
 import yfinance as yf
 from datetime import datetime, timedelta
 
-# Focus list (Swapped out Zomato for clean, highly active targets)
+# FREE TIER WATCHLIST (Benchmark Giants + High-Volume Momentum Plays)
+# ==============================================================================
 WATCHLIST = [
+    # --- The High-Volume Retail & Momentum Favorites ---
     "ADANIENT.NS", "HFCL.NS", "HAL.NS", "BEL.NS", 
     "MAZDOCK.NS", "COCHINSHIP.NS", "SUZLON.NS", "IREDA.NS",
-    "RELIANCE.NS", "TCS.NS", "INFY.NS"
+    "ZOMATO.NS", "JIOFIN.NS", "TRENT.NS", "KPIGREEN.NS",
+    
+    # --- Nifty 50 Heavyweights (Guarantees steady event flow) ---
+    "RELIANCE.NS", "TCS.NS", "INFY.NS", "HDFCBANK.NS", 
+    "ICICIBANK.NS", "SBIN.NS", "BHARTIARTL.NS", "ITC.NS", 
+    "LTIM.NS", "TATAMOTORS.NS", "M&M.NS", "AXISBANK.NS"
 ]
 
 events_list = []
 today = datetime.today().date()
-one_week_out = today + timedelta(days=60)
+one_week_out = today + timedelta(days=14)
 
 print("Starting Watchlist scan via upgraded Yahoo Finance Engine...")
 
