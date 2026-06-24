@@ -15,7 +15,7 @@ PREMIUM_WATCHLIST = [
 events_list = []
 today = datetime.today().date()
 # Premium Tier uses a hyper-focused 3-day radar for high-accuracy entry timing
-three_days_out = today + timedelta(days=3)
+three_days_out = today + timedelta(days=60)
 
 print("Starting Premium Scan Engine...")
 
