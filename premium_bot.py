@@ -3,11 +3,12 @@ import requests
 import pandas as pd
 import yfinance as yf
 from datetime import datetime, timedelta
-from google import genai
+# FIX: Explicit import path to bypass root namespace environmental traps
+from google.genai import Client
 
-# INITIALIZE GEMINI CLIENT
+# INITIALIZE GEMINI CLIENT NATIVELY
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-ai_client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
+ai_client = Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
 
 # ==============================================================================
 # EXPANDED MAXIMUM LIQUIDITY & MOMENTUM WATCHLIST (70+ Alpha Targets)
@@ -130,7 +131,7 @@ def send_premium_alert(events):
         message += f"⚡ <b>{ev['symbol']}</b> | {ev['action']}\n"
         message += f"🗓 <b>Target Date:</b> {ev['date']}\n"
         message += f"📊 <b>Momentum Score:</b> <code>{ev['score']}/10</code>\n\n"
-        message += f"🏹 <b>Intraday Setup & profit Booking:</b>\n<i>{ev['intraday']}</i>\n\n"
+        message += f"🏹 <b>Intraday Setup & Profit Booking:</b>\n<i>{ev['intraday']}</i>\n\n"
         message += f"💼 <b>Long-Term Capital Allocation & Scale-Out:</b>\n<i>{ev['longterm']}</i>\n"
         
         url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
