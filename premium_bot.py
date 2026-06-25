@@ -38,7 +38,7 @@ PREMIUM_WATCHLIST = [
 
 events_list = []
 today = datetime.today().date()
-three_days_out = today + timedelta(days=3)
+three_days_out = today + timedelta(days=14)
 
 def generate_profit_booking_strategy(ticker, event_type, headlines):
     """Calls Gemini API directly via raw HTTP POST requests to prevent SDK import errors."""
