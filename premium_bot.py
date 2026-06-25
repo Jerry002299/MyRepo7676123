@@ -103,35 +103,36 @@ for ticker in PREMIUM_WATCHLIST:
     except Exception:
         continue
 
-# PHASE 2: FALLBACK ENGINE (If no immediate calendar events exist, find daily chart momentum)
+# PHASE 2: FALLBACK ENGINE (Guaranteed daily chart momentum)
 if not events_list:
     print("No immediate corporate events found. Activating Daily Technical Momentum Scanner...")
     momentum_candidates = []
     
-    # Check the top stocks on your list for recent aggressive price movement (past 5 sessions)
-    for ticker in PREMIUM_WATCHLIST[:25]:  # Scanning a targeted batch to keep execution under runner limits
+    # Scan the watchlist for the best performing stocks from the last session
+    for ticker in PREMIUM_WATCHLIST:  
         try:
-            hist = yf.Ticker(ticker).history(period="5d")
+            # Fetching 2 days of data is super fast and prevents timeouts
+            hist = yf.Ticker(ticker).history(period="2d")
             if len(hist) >= 2:
                 pct_change = ((hist['Close'].iloc[-1] - hist['Close'].iloc[-2]) / hist['Close'].iloc[-2]) * 100
-                # Target stocks moving over +2.5% in the previous session
-                if pct_change >= 2.5:
-                    momentum_candidates.append((ticker, pct_change))
+                momentum_candidates.append((ticker, pct_change))
         except Exception:
             continue
             
-    # Take the top 2 highest momentum stocks to push to members today
-    momentum_candidates = sorted(momentum_candidates, key=lambda x: x[1], reverse=True)[:2]
+    # CRITICAL FIX: Remove the >= 2.5% filter completely. 
+    # Just sort by the highest percentage change and take the absolute top 3 gainers of the day!
+    momentum_candidates = sorted(momentum_candidates, key=lambda x: x[1], reverse=True)[:3]
     
     for ticker, change in momentum_candidates:
-        prompt = f"Stock {ticker} rallied +{change:.2f}% yesterday showing strong momentum. Give a professional short-term intraday scalp setup and profit booking targets strictly using percentages based on the opening price. Format strictly as:\nSCORE: [1-10]\nINTRADAY: [Strategy text]\nLONGTERM: [Strategy text]"
+        prompt = f"Stock {ticker} is one of the top gainers from the previous session, moving +{change:.2f}%. Give a professional short-term intraday scalp setup and profit booking targets strictly using percentages based on the opening price. Format strictly as:\nSCORE: [1-10]\nINTRADAY: [Strategy text]\nLONGTERM: [Strategy text]"
         score, intra, long_strat = parse_ai_response(ask_gemini(prompt))
         events_list.append({
             "symbol": ticker.replace(".NS", ""),
-            "action": "🚀 DAILY PRICE MOMENTUM BREAKOUT",
+            "action": f"🚀 TOP GAINER BREAKOUT (Previous Session: +{change:.1f}%)",
             "date": datetime.today().strftime('%d-%m-%Y'),
             "score": score, "intraday": intra, "longterm": long_strat
         })
+
 
 # ==============================================================================
 # TELEGRAM TRANSMISSION
