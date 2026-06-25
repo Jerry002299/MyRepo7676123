@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 # ==============================================================================
-# EXPANDED MAXIMUM LIQUIDITY & MOMENTUM WATCHLIST (70+ Alpha Targets)
+# EXPANDED WATCHLIST
 # ==============================================================================
 PREMIUM_WATCHLIST = [
     # --- Defense, Engineering & Railway Momentum ---
@@ -35,116 +35,121 @@ PREMIUM_WATCHLIST = [
     "NMDC.NS", "TATASTEEL.NS", "GATI.NS", "JINDALSTEL.NS", "COHANCE.NS"
 ]
 
-
 events_list = []
 today = datetime.today().date()
 three_days_out = today + timedelta(days=3)
 
-def generate_profit_booking_strategy(ticker, event_type, headlines):
-    """Calls Gemini API directly via raw HTTP POST requests to prevent SDK import errors."""
-    if not GEMINI_API_KEY:
-        return "5/10", "Neutral framework.", "Hold core technical support."
-        
-    prompt = f"""
-    You are an elite, highly aggressive institutional money manager for Indian Equities (NSE/BSE).
-    Analyze this corporate event '{event_type}' and recent headlines for {ticker}:
-    {headlines if headlines else 'No recent breaking news.'}
-    
-    Provide target execution entries and exits in this exact format string:
-    SCORE: [1-10 momentum rank]
-    INTRADAY: [Strict opening action rule, target resistance to book quick profits, and invalidation stop-loss]
-    LONGTERM: [Explicit investment allocation rule, and trailing price target or percentage milestone to partially book capital profits]
-    """
-    
-    # Pure HTTP direct call to Gemini 2.5 Flash endpoints
+def ask_gemini(prompt):
+    """Direct HTTP POST connection to Gemini API."""
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={GEMINI_API_KEY}"
     headers = {"Content-Type": "application/json"}
-    payload = {
-        "contents": [{"parts": [{"text": prompt}]}]
-    }
-    
+    payload = {"contents": [{"parts": [{"text": prompt}]}]}
     try:
         response = requests.post(url, json=payload, headers=headers, timeout=15)
         if response.status_code == 200:
-            res_json = response.json()
-            text = res_json['candidates'][0]['content']['parts'][0]['text']
-            
-            score, intraday, longterm = "5.0", "Monitor open.", "Hold structural base."
-            for line in text.split('\n'):
-                if line.startswith("SCORE:"):
-                    score = line.replace("SCORE:", "").strip()
-                elif line.startswith("INTRADAY:"):
-                    intraday = line.replace("INTRADAY:", "").strip()
-                elif line.startswith("LONGTERM:"):
-                    longterm = line.replace("LONGTERM:", "").strip()
-            return score, intraday, longterm
-        else:
-            return "N/A", "Scan raw chart pivots.", "Hold according to structural portfolio guidelines."
+            return response.json()['candidates'][0]['content']['parts'][0]['text']
     except Exception:
-        return "N/A", "Scalp near technical pivot lines.", "Book partial gains at standard Fibonacci extensions."
+        pass
+    return None
 
-print(f"Starting Alpha AI HTTP Scan across {len(PREMIUM_WATCHLIST)} institutional tickers...")
+def parse_ai_response(text):
+    score, intraday, longterm = "6.0", "Monitor key breakout levels.", "Maintain structural portfolio exposure."
+    if text:
+        for line in text.split('\n'):
+            if line.startswith("SCORE:"):
+                score = line.replace("SCORE:", "").strip()
+            elif line.startswith("INTRADAY:"):
+                intraday = line.replace("INTRADAY:", "").strip()
+            elif line.startswith("LONGTERM:"):
+                longterm = line.replace("LONGTERM:", "").strip()
+    return score, intraday, longterm
 
+print(f"Scanning {len(PREMIUM_WATCHLIST)} stocks for corporate events...")
+
+# PHASE 1: SCAN FOR CRITICAL 3-DAY CALENDAR EVENTS
 for ticker in PREMIUM_WATCHLIST:
     try:
         stock = yf.Ticker(ticker)
         calendar = stock.get_calendar()
         
-        # Capture raw headline vectors
-        news_data = stock.news
-        headlines = "\n".join([f"- {item['title']}" for item in news_data[:3]]) if news_data else ""
-        
         if calendar and isinstance(calendar, dict):
-            # 1. Parse Pre-Earnings Volume Windows
             if "Earnings Date" in calendar:
                 earn_data = calendar["Earnings Date"]
                 if isinstance(earn_data, list) and len(earn_data) > 0:
                     earn_date = pd.to_datetime(earn_data[0]).date()
                     if today <= earn_date <= three_days_out:
-                        score, intra, long_strat = generate_profit_booking_strategy(ticker, "Pre-Earnings Release", headlines)
+                        prompt = f"Stock {ticker} has Earnings on {earn_date}. Give an aggressive short-term trading momentum plan using percentages. Format strictly as:\nSCORE: [1-10]\nINTRADAY: [Strategy text]\nLONGTERM: [Strategy text]"
+                        score, intra, long_strat = parse_ai_response(ask_gemini(prompt))
                         events_list.append({
                             "symbol": ticker.replace(".NS", ""),
-                            "action": "🔥 PRE-EARNINGS HIGH VOLATILITY",
+                            "action": "🔥 IMMEDIATE EARNINGS BREAKOUT",
                             "date": earn_date.strftime('%d-%m-%Y'),
                             "score": score, "intraday": intra, "longterm": long_strat
                         })
             
-            # 2. Parse Imminent Ex-Dividend Deadlines
             if "Ex-Dividend Date" in calendar:
                 div_data = calendar["Ex-Dividend Date"]
                 if div_data:
                     div_date = pd.to_datetime(div_data).date()
                     if today <= div_date <= three_days_out:
-                        score, intra, long_strat = generate_profit_booking_strategy(ticker, "Ex-Dividend Adjustment", headlines)
+                        prompt = f"Stock {ticker} goes Ex-Dividend on {div_date}. Give an aggressive dividend arbitrage short-term plan using percentages. Format strictly as:\nSCORE: [1-10]\nINTRADAY: [Strategy text]\nLONGTERM: [Strategy text]"
+                        score, intra, long_strat = parse_ai_response(ask_gemini(prompt))
                         events_list.append({
                             "symbol": ticker.replace(".NS", ""),
-                            "action": "💰 DIVIDEND PRICE CUTOFF",
+                            "action": "💰 URGENT DIVIDEND ARBITRAGE",
                             "date": div_date.strftime('%d-%m-%Y'),
                             "score": score, "intraday": intra, "longterm": long_strat
                         })
     except Exception:
         continue
 
+# PHASE 2: FALLBACK ENGINE (If no immediate calendar events exist, find daily chart momentum)
+if not events_list:
+    print("No immediate corporate events found. Activating Daily Technical Momentum Scanner...")
+    momentum_candidates = []
+    
+    # Check the top stocks on your list for recent aggressive price movement (past 5 sessions)
+    for ticker in PREMIUM_WATCHLIST[:25]:  # Scanning a targeted batch to keep execution under runner limits
+        try:
+            hist = yf.Ticker(ticker).history(period="5d")
+            if len(hist) >= 2:
+                pct_change = ((hist['Close'].iloc[-1] - hist['Close'].iloc[-2]) / hist['Close'].iloc[-2]) * 100
+                # Target stocks moving over +2.5% in the previous session
+                if pct_change >= 2.5:
+                    momentum_candidates.append((ticker, pct_change))
+        except Exception:
+            continue
+            
+    # Take the top 2 highest momentum stocks to push to members today
+    momentum_candidates = sorted(momentum_candidates, key=lambda x: x[1], reverse=True)[:2]
+    
+    for ticker, change in momentum_candidates:
+        prompt = f"Stock {ticker} rallied +{change:.2f}% yesterday showing strong momentum. Give a professional short-term intraday scalp setup and profit booking targets strictly using percentages based on the opening price. Format strictly as:\nSCORE: [1-10]\nINTRADAY: [Strategy text]\nLONGTERM: [Strategy text]"
+        score, intra, long_strat = parse_ai_response(ask_gemini(prompt))
+        events_list.append({
+            "symbol": ticker.replace(".NS", ""),
+            "action": "🚀 DAILY PRICE MOMENTUM BREAKOUT",
+            "date": datetime.today().strftime('%d-%m-%Y'),
+            "score": score, "intraday": intra, "longterm": long_strat
+        })
+
+# ==============================================================================
+# TELEGRAM TRANSMISSION
+# ==============================================================================
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 TELEGRAM_PREMIUM_CHAT_ID = os.getenv("TELEGRAM_PREMIUM_CHAT_ID")
 
-def send_premium_alert(events):
-    if not events:
-        print("No high-alpha short term trade configurations matched the radar today.")
-        return
-    
-    for ev in events:
+if events_list and TELEGRAM_BOT_TOKEN and TELEGRAM_PREMIUM_CHAT_ID:
+    for ev in events_list:
         message = f"<b>👑 PREMIUM INSIDER ALPHA RADAR</b>\n"
         message += f"⚡ <b>{ev['symbol']}</b> | {ev['action']}\n"
-        message += f"🗓 <b>Target Date:</b> {ev['date']}\n"
+        message += f"🗓 <b>Trade Window:</b> {ev['date']}\n"
         message += f"📊 <b>Momentum Score:</b> <code>{ev['score']}/10</code>\n\n"
         message += f"🏹 <b>Intraday Setup & Profit Booking:</b>\n<i>{ev['intraday']}</i>\n\n"
-        message += f"💼 <b>Long-Term Capital Allocation & Scale-Out:</b>\n<i>{ev['longterm']}</i>\n"
+        message += f"💼 <b>Long-Term Scale-Out Strategy:</b>\n<i>{ev['longterm']}</i>\n"
         
-        url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
-        requests.post(url, json={"chat_id": TELEGRAM_PREMIUM_CHAT_ID, "text": message, "parse_mode": "HTML"})
-        
-    print(f"Successfully processed and delivered {len(events)} premium alerts.")
-
-if __name__ == "__main__":
-    send_premium_alert(events_list)
+        requests.post(f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage", 
+                      json={"chat_id": TELEGRAM_PREMIUM_CHAT_ID, "text": message, "parse_mode": "HTML"})
+    print(f"Successfully delivered {len(events_list)} active setups to Premium.")
+else:
+    print("No actionable setups generated today.")
