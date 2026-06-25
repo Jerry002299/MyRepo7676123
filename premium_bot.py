@@ -28,7 +28,7 @@ PREMIUM_WATCHLIST = [
     "RELIANCE.NS", "TCS.NS", "INFY.NS", "HDFCBANK.NS", "ICICIBANK.NS", "SBIN.NS", 
     "BHARTIARTL.NS", "ITC.NS", "TATAMOTORS.NS", "AXISBANK.NS", "M&M.NS", "LT.NS", 
     "MARUTI.NS", "SUNPHARMA.NS", "BAJAJFINSV.NS", "KOTAKBANK.NS", "HCLTECH.NS",
-    "COFORGE.NS",  # Added
+    "COFORGE.NS",
 
     # --- Midcap Volume Outliers ---
     "CDSL.NS", "ANGELONE.NS", "TATAMTRDV.NS", "IRCTC.NS", "YESBANK.NS", "SAIL.NS", 
@@ -56,11 +56,11 @@ def parse_ai_response(text):
     score, intraday, longterm = "6.0", "Monitor key breakout levels.", "Maintain structural portfolio exposure."
     if text:
         for line in text.split('\n'):
-            if line.startswith("SCORE:"):
+            if line.strip().startswith("SCORE:"):
                 score = line.replace("SCORE:", "").strip()
-            elif line.startswith("INTRADAY:"):
+            elif line.strip().startswith("INTRADAY:"):
                 intraday = line.replace("INTRADAY:", "").strip()
-            elif line.startswith("LONGTERM:"):
+            elif line.strip().startswith("LONGTERM:"):
                 longterm = line.replace("LONGTERM:", "").strip()
     return score, intraday, longterm
 
@@ -71,7 +71,7 @@ for ticker in PREMIUM_WATCHLIST:
     try:
         stock = yf.Ticker(ticker)
         calendar = stock.get_calendar()
-        
+
         if calendar and isinstance(calendar, dict):
             if "Earnings Date" in calendar:
                 earn_data = calendar["Earnings Date"]
@@ -86,7 +86,7 @@ for ticker in PREMIUM_WATCHLIST:
                             "date": earn_date.strftime('%d-%m-%Y'),
                             "score": score, "intraday": intra, "longterm": long_strat
                         })
-            
+
             if "Ex-Dividend Date" in calendar:
                 div_data = calendar["Ex-Dividend Date"]
                 if div_data:
@@ -107,23 +107,20 @@ for ticker in PREMIUM_WATCHLIST:
 if not events_list:
     print("No immediate corporate events found. Activating Daily Technical Momentum Scanner...")
     momentum_candidates = []
-    
-    # Scan the watchlist for the best performing stocks from the last session
+
     for ticker in PREMIUM_WATCHLIST:  
         try:
-            # Fetching 2 days of data is super fast and prevents timeouts
             hist = yf.Ticker(ticker).history(period="2d")
             if len(hist) >= 2:
                 pct_change = ((hist['Close'].iloc[-1] - hist['Close'].iloc[-2]) / hist['Close'].iloc[-2]) * 100
                 momentum_candidates.append((ticker, pct_change))
         except Exception:
             continue
-            
-    # CRITICAL FIX: Remove the >= 2.5% filter completely. 
-    # Just sort by the highest percentage change and take the absolute top 3 gainers of the day!
+
     momentum_candidates = sorted(momentum_candidates, key=lambda x: x[1], reverse=True)[:3]
-    
-        for ticker, change in momentum_candidates:
+
+    # FIX: Corrected indentation block and reconnected execution flow
+    for ticker, change in momentum_candidates:
         prompt = f"""
         You are an elite, highly aggressive institutional day trader for Indian Equities (NSE/BSE).
         Stock {ticker} surged +{change:.2f}% in the previous session. 
@@ -139,7 +136,18 @@ if not events_list:
         INTRADAY: [State a specific entry trigger like: 'Enter long if price breaks opening 15-min high by +0.5% with high volume.' State exactly where to book profits: 'Book 50% profits at +3% and trail remainder.' State a definitive stop-loss: 'Cut trade instantly if price slips -1.5% below entry level.']
         LONGTERM: [State a clear allocation rule: 'Deploy 3-5% portfolio capital on a healthy -5% pullback from current peak.' State a profit-booking rule: 'Liquidate 30% of position at a +25% capital milestone.']
         """
-
+        # Execute the AI generation request and append safely to the payload array
+        raw_ai_text = ask_gemini(prompt)
+        score, intra, long_strat = parse_ai_response(raw_ai_text)
+        
+        events_list.append({
+            "symbol": ticker.replace(".NS", ""),
+            "action": f"🚀 TOP GAINER BREAKOUT (Previous Session: +{change:.1f}%)",
+            "date": datetime.today().strftime('%d-%m-%Y'),
+            "score": score, 
+            "intraday": intra, 
+            "longterm": long_strat
+        })
 
 # ==============================================================================
 # TELEGRAM TRANSMISSION
@@ -155,7 +163,7 @@ if events_list and TELEGRAM_BOT_TOKEN and TELEGRAM_PREMIUM_CHAT_ID:
         message += f"📊 <b>Momentum Score:</b> <code>{ev['score']}/10</code>\n\n"
         message += f"🏹 <b>Intraday Setup & Profit Booking:</b>\n<i>{ev['intraday']}</i>\n\n"
         message += f"💼 <b>Long-Term Scale-Out Strategy:</b>\n<i>{ev['longterm']}</i>\n"
-        
+
         requests.post(f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage", 
                       json={"chat_id": TELEGRAM_PREMIUM_CHAT_ID, "text": message, "parse_mode": "HTML"})
     print(f"Successfully delivered {len(events_list)} active setups to Premium.")
