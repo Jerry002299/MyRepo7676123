@@ -123,15 +123,22 @@ if not events_list:
     # Just sort by the highest percentage change and take the absolute top 3 gainers of the day!
     momentum_candidates = sorted(momentum_candidates, key=lambda x: x[1], reverse=True)[:3]
     
-    for ticker, change in momentum_candidates:
-        prompt = f"Stock {ticker} is one of the top gainers from the previous session, moving +{change:.2f}%. Give a professional short-term intraday scalp setup and profit booking targets strictly using percentages based on the opening price. Format strictly as:\nSCORE: [1-10]\nINTRADAY: [Strategy text]\nLONGTERM: [Strategy text]"
-        score, intra, long_strat = parse_ai_response(ask_gemini(prompt))
-        events_list.append({
-            "symbol": ticker.replace(".NS", ""),
-            "action": f"🚀 TOP GAINER BREAKOUT (Previous Session: +{change:.1f}%)",
-            "date": datetime.today().strftime('%d-%m-%Y'),
-            "score": score, "intraday": intra, "longterm": long_strat
-        })
+        for ticker, change in momentum_candidates:
+        prompt = f"""
+        You are an elite, highly aggressive institutional day trader for Indian Equities (NSE/BSE).
+        Stock {ticker} surged +{change:.2f}% in the previous session. 
+
+        Generate a high-alpha, specific trade blueprint based on this momentum. 
+        CRITICAL RULES:
+        1. Never use vague advice like 'observe consolidation' or 'warrants careful analysis'.
+        2. Give concrete, conditional percentage rules.
+        3. Do not quote exact rupee prices.
+
+        Format your output strictly as:
+        SCORE: [1-10 momentum score]
+        INTRADAY: [State a specific entry trigger like: 'Enter long if price breaks opening 15-min high by +0.5% with high volume.' State exactly where to book profits: 'Book 50% profits at +3% and trail remainder.' State a definitive stop-loss: 'Cut trade instantly if price slips -1.5% below entry level.']
+        LONGTERM: [State a clear allocation rule: 'Deploy 3-5% portfolio capital on a healthy -5% pullback from current peak.' State a profit-booking rule: 'Liquidate 30% of position at a +25% capital milestone.']
+        """
 
 
 # ==============================================================================
